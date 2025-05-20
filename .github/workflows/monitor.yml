@@ -2,7 +2,7 @@ name: Run Yandex Disk Monitor
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Каждые 1 час
+    - cron: '*/15 * * * *'  # Каждые 1 час
   workflow_dispatch:     # Возможность ручного запуска
 
 jobs:
