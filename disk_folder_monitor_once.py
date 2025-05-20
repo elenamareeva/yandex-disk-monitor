@@ -2,6 +2,7 @@ import os
 import json
 import requests
 import smtplib
+import subprocess
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -48,21 +49,25 @@ def save_state(filename, state):
     with open(filename, "w") as f:
         json.dump(state, f, indent=2)
 
-def detect_changes(prev, curr):
-    changes = []
-    prev_dict = {f["path"]: f for f in prev}
-    for file in curr:
-        old = prev_dict.get(file["path"])
-        if not old or old["etag"] != file["etag"]:
-            changes.append(file)
-    return changes
+def git_commit_and_push(files):
+    subprocess.run(["git", "config", "--global", "user.email", "bot@example.com"])
+    subprocess.run(["git", "config", "--global", "user.name", "GitHub Bot"])
+    subprocess.run(["git", "add"] + files)
+    subprocess.run(["git", "commit", "-m", "Update notification state"], check=False)
+    subprocess.run(["git", "push"], check=False)
 
 try:
     current_state = get_folder_files()
     previous_state = load_state("previous_state.json")
     notified_etags = load_state("notified_etags.json")  # path:etag
 
-    changed_files = detect_changes(previous_state, current_state)
+    changed_files = []
+    prev_dict = {f["path"]: f for f in previous_state}
+    for file in current_state:
+        old = prev_dict.get(file["path"])
+        if not old or old["etag"] != file["etag"]:
+            changed_files.append(file)
+
     newly_notified = notified_etags.copy()
 
     for f in changed_files:
@@ -75,6 +80,8 @@ try:
 
     save_state("previous_state.json", current_state)
     save_state("notified_etags.json", newly_notified)
+
+    git_commit_and_push(["previous_state.json", "notified_etags.json"])
 
 except Exception as e:
     print("Ошибка:", e)
