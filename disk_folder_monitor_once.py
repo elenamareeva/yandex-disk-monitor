@@ -38,14 +38,14 @@ def send_email(subject, body):
         server.login(EMAIL_FROM, EMAIL_PASS)
         server.send_message(message)
 
-def load_previous_state():
-    if os.path.exists("previous_state.json"):
-        with open("previous_state.json") as f:
+def load_state(filename):
+    if os.path.exists(filename):
+        with open(filename) as f:
             return json.load(f)
-    return []
+    return {}
 
-def save_current_state(state):
-    with open("previous_state.json", "w") as f:
+def save_state(filename, state):
+    with open(filename, "w") as f:
         json.dump(state, f, indent=2)
 
 def detect_changes(prev, curr):
@@ -59,12 +59,22 @@ def detect_changes(prev, curr):
 
 try:
     current_state = get_folder_files()
-    previous_state = load_previous_state()
+    previous_state = load_state("previous_state.json")
+    notified_etags = load_state("notified_etags.json")  # path:etag
+
     changed_files = detect_changes(previous_state, current_state)
-    if changed_files:
-        for f in changed_files:
-            body = f"📄 Изменён файл: {f['name']}\nПуть: {f['path']}\nДата: {f['modified']}"
-            send_email("⚠️ Обновление файла в Яндекс.Диске", body)
-    save_current_state(current_state)
+    newly_notified = notified_etags.copy()
+
+    for f in changed_files:
+        if f["path"] in notified_etags and notified_etags[f["path"]] == f["etag"]:
+            continue  # уже уведомляли
+
+        body = f"📄 Изменён файл: {f['name']}\nПуть: {f['path']}\nДата: {f['modified']}"
+        send_email("⚠️ Обновление файла в Яндекс.Диске", body)
+        newly_notified[f["path"]] = f["etag"]
+
+    save_state("previous_state.json", current_state)
+    save_state("notified_etags.json", newly_notified)
+
 except Exception as e:
     print("Ошибка:", e)
