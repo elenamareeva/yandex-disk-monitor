@@ -1,15 +1,15 @@
-name: Run Yandex Disk Monitor
+name: Run Yandex Disk Monitors
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  # Каждые 1 час
-  workflow_dispatch:     # Возможность ручного запуска
+    - cron: '*/15 * * * *'  # Каждые 15 минут по UTC
+  workflow_dispatch:
 
 jobs:
-  run-monitor:
+  run-monitors:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -20,8 +20,17 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
-      - name: Run disk monitor
+      - name: Run etag-based monitor (file content changes)
         run: python disk_folder_monitor_once.py
+        env:
+          YANDEX_TOKEN: ${{ secrets.YANDEX_TOKEN }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          FOLDER_PATH: ${{ secrets.FOLDER_PATH }}
+
+      - name: Run journal-based monitor (file/folder actions)
+        run: python journal_monitor.py
         env:
           YANDEX_TOKEN: ${{ secrets.YANDEX_TOKEN }}
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
