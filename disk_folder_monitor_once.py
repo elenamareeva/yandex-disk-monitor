@@ -56,7 +56,9 @@ def build_index(data):
 def describe_change(change_type, item):
     emoji = {"added": "➕", "removed": "➖", "changed": "✏️"}
     label = "файл" if item["type"] != "dir" else "папка"
-    return f"{emoji[change_type]} Добавлен {label}: {item['path']}" if change_type == "added" else            f"{emoji[change_type]} Изменён {label}: {item['path']}" if change_type == "changed" else            f"{emoji[change_type]} Удалён {label}: {item['path']}"
+    return f"{emoji[change_type]} Добавлен {label}: {item['path']}" if change_type == "added" else \
+           f"{emoji[change_type]} Изменён {label}: {item['path']}" if change_type == "changed" else \
+           f"{emoji[change_type]} Удалён {label}: {item['path']}"
 
 def detect_differences(prev_list, curr_list):
     prev = build_index(prev_list)
@@ -64,7 +66,11 @@ def detect_differences(prev_list, curr_list):
 
     added = [curr[p] for p in curr if p not in prev]
     removed = [prev[p] for p in prev if p not in curr]
-    changed = [curr[p] for p in curr if p in prev and curr[p]["etag"] != prev[p]["etag"]]
+    changed = [
+        curr[p] for p in curr if p in prev and (
+            curr[p]["etag"] != prev[p]["etag"] or curr[p]["modified"] != prev[p]["modified"]
+        )
+    ]
 
     return added, removed, changed
 
