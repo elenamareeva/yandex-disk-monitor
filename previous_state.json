@@ -5,19 +5,5 @@
     "path": "disk:/Website/images",
     "etag": "",
     "type": "dir"
-  },
-  {
-    "name": "test",
-    "modified": "2025-05-21T09:03:22+00:00",
-    "path": "disk:/Website/test",
-    "etag": "",
-    "type": "dir"
-  },
-  {
-    "name": "\u0435\u0443\u044b\u0435",
-    "modified": "2025-05-21T09:26:04+00:00",
-    "path": "disk:/Website/\u0435\u0443\u044b\u0435",
-    "etag": "",
-    "type": "dir"
   }
 ]
