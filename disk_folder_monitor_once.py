@@ -14,20 +14,30 @@ SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.yandex.ru")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", 465))
 FOLDER_PATH = os.environ.get("FOLDER_PATH")
 
-def get_folder_items():
+def list_all_items(path):
     url = "https://cloud-api.yandex.net/v1/disk/resources"
     headers = {"Authorization": f"OAuth {TOKEN}"}
-    params = {"path": FOLDER_PATH}
-    response = requests.get(url, headers=headers, params=params)
-    response.raise_for_status()
-    data = response.json()
-    return [{
-        "name": item["name"],
-        "modified": item["modified"],
-        "path": item["path"],
-        "etag": item.get("etag", ""),
-        "type": item["type"]
-    } for item in data.get("_embedded", {}).get("items", [])]
+    items = []
+
+    def recurse(current_path):
+        params = {"path": current_path}
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        data = response.json()
+        embedded = data.get("_embedded", {})
+        for item in embedded.get("items", []):
+            entry = {
+                "name": item["name"],
+                "modified": item["modified"],
+                "path": item["path"],
+                "etag": item.get("etag", ""),
+                "type": item["type"]
+            }
+            items.append(entry)
+            if item["type"] == "dir":
+                recurse(item["path"])
+    recurse(path)
+    return items
 
 def send_email(subject, body):
     message = MIMEMultipart()
@@ -55,19 +65,16 @@ def build_index(data):
 def describe_change(change_type, item):
     label = "Файл" if item["type"] != "dir" else "Папка"
     gender = "м" if label == "Файл" else "ж"
-
     endings = {
         "added":   {"м": "добавлен",   "ж": "добавлена"},
         "removed": {"м": "удалён",     "ж": "удалена"},
         "changed": {"м": "изменён",    "ж": "изменена"}
     }
-
     emoji = {
         "added": "➕",
         "removed": "➖",
         "changed": "✏️"
     }
-
     return f"{emoji[change_type]} {label} {endings[change_type][gender]}: {item['path']}"
 
 def detect_differences(prev_list, curr_list):
@@ -92,7 +99,7 @@ def git_commit_and_push(files):
     subprocess.run(["git", "push"], check=False)
 
 try:
-    current = get_folder_items()
+    current = list_all_items(FOLDER_PATH)
     previous = load_state("previous_state.json")
 
     added, removed, changed = detect_differences(previous, current)
