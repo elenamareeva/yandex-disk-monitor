@@ -54,13 +54,21 @@ def build_index(data):
 
 def describe_change(change_type, item):
     label = "Файл" if item["type"] != "dir" else "Папка"
-    if change_type == "added":
-        return f"➕ {label} добавлен: {item['path']}"
-    elif change_type == "removed":
-        return f"➖ {label} удалён: {item['path']}" if label == "Файл" else f"➖ {label} удалена: {item['path']}"
-    elif change_type == "changed":
-        return f"✏️ {label} изменён: {item['path']}" if label == "Файл" else f"✏️ {label} изменена: {item['path']}"
-    return ""
+    gender = "м" if label == "Файл" else "ж"
+
+    endings = {
+        "added":   {"м": "добавлен",   "ж": "добавлена"},
+        "removed": {"м": "удалён",     "ж": "удалена"},
+        "changed": {"м": "изменён",    "ж": "изменена"}
+    }
+
+    emoji = {
+        "added": "➕",
+        "removed": "➖",
+        "changed": "✏️"
+    }
+
+    return f"{emoji[change_type]} {label} {endings[change_type][gender]}: {item['path']}"
 
 def detect_differences(prev_list, curr_list):
     prev = build_index(prev_list)
