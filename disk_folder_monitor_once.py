@@ -6,7 +6,6 @@ import subprocess
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# Загрузка конфигурации из переменных окружения
 TOKEN = os.environ.get("YANDEX_TOKEN")
 EMAIL_FROM = os.environ.get("EMAIL_FROM")
 EMAIL_TO = os.environ.get("EMAIL_TO", "").split(",")
@@ -54,11 +53,14 @@ def build_index(data):
     return {item["path"]: item for item in data}
 
 def describe_change(change_type, item):
-    emoji = {"added": "➕", "removed": "➖", "changed": "✏️"}
-    label = "файл" if item["type"] != "dir" else "папка"
-    return f"{emoji[change_type]} Добавлен {label}: {item['path']}" if change_type == "added" else \
-           f"{emoji[change_type]} Изменён {label}: {item['path']}" if change_type == "changed" else \
-           f"{emoji[change_type]} Удалён {label}: {item['path']}"
+    label = "Файл" if item["type"] != "dir" else "Папка"
+    if change_type == "added":
+        return f"➕ {label} добавлен: {item['path']}"
+    elif change_type == "removed":
+        return f"➖ {label} удалён: {item['path']}" if label == "Файл" else f"➖ {label} удалена: {item['path']}"
+    elif change_type == "changed":
+        return f"✏️ {label} изменён: {item['path']}" if label == "Файл" else f"✏️ {label} изменена: {item['path']}"
+    return ""
 
 def detect_differences(prev_list, curr_list):
     prev = build_index(prev_list)
