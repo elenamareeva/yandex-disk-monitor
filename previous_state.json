@@ -1,1 +1,16 @@
-[]
+[
+  {
+    "name": "images",
+    "modified": "2023-12-25T08:22:30+00:00",
+    "path": "disk:/Website/images",
+    "etag": "",
+    "type": "dir"
+  },
+  {
+    "name": "test",
+    "modified": "2025-05-21T09:03:22+00:00",
+    "path": "disk:/Website/test",
+    "etag": "",
+    "type": "dir"
+  }
+]
