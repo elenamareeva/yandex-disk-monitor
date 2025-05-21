@@ -2,6 +2,7 @@ import os
 import json
 import requests
 import smtplib
+import subprocess
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -14,7 +15,7 @@ SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.yandex.ru")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", 465))
 FOLDER_PATH = os.environ.get("FOLDER_PATH")
 
-def get_folder_items():
+def get_folder_files():
     url = "https://cloud-api.yandex.net/v1/disk/resources"
     headers = {"Authorization": f"OAuth {TOKEN}"}
     params = {"path": FOLDER_PATH}
@@ -25,9 +26,8 @@ def get_folder_items():
         "name": item["name"],
         "modified": item["modified"],
         "path": item["path"],
-        "etag": item.get("etag", ""),
-        "type": item["type"]
-    } for item in data.get("_embedded", {}).get("items", [])]
+        "etag": item.get("etag", "")
+    } for item in data.get("_embedded", {}).get("items", []) if item["type"] == "file"]
 
 def send_email(subject, body):
     message = MIMEMultipart()
@@ -43,49 +43,45 @@ def load_state(filename):
     if os.path.exists(filename):
         with open(filename) as f:
             return json.load(f)
-    return []
+    return {}
 
 def save_state(filename, state):
     with open(filename, "w") as f:
         json.dump(state, f, indent=2)
 
-def build_index(data):
-    return {item["path"]: item for item in data}
-
-def describe_change(change_type, item):
-    emoji = {"added": "➕", "removed": "➖", "changed": "✏️"}
-    label = "папка" if item["type"] == "dir" else "файл"
-    return f"{emoji[change_type]} {label.capitalize()}: {item['path']}"
-
-def detect_differences(prev_list, curr_list):
-    prev = build_index(prev_list)
-    curr = build_index(curr_list)
-
-    added = [curr[p] for p in curr if p not in prev]
-    removed = [prev[p] for p in prev if p not in curr]
-    changed = [curr[p] for p in curr if p in prev and curr[p]["etag"] != prev[p]["etag"]]
-
-    return added, removed, changed
+def git_commit_and_push(files):
+    subprocess.run(["git", "config", "--global", "user.email", "bot@example.com"])
+    subprocess.run(["git", "config", "--global", "user.name", "GitHub Bot"])
+    subprocess.run(["git", "add"] + files)
+    subprocess.run(["git", "commit", "-m", "Update notification state"], check=False)
+    subprocess.run(["git", "push"], check=False)
 
 try:
-    current = get_folder_items()
-    previous = load_state("previous_state.json")
+    current_state = get_folder_files()
+    previous_state = load_state("previous_state.json")
+    notified_etags = load_state("notified_etags.json")  # path:etag
 
-    added, removed, changed = detect_differences(previous, current)
+    changed_files = []
+    prev_dict = {f["path"]: f for f in previous_state}
+    for file in current_state:
+        old = prev_dict.get(file["path"])
+        if not old or old["etag"] != file["etag"]:
+            changed_files.append(file)
 
-    messages = []
-    for item in added:
-        messages.append(describe_change("added", item))
-    for item in removed:
-        messages.append(describe_change("removed", item))
-    for item in changed:
-        messages.append(describe_change("changed", item))
+    newly_notified = notified_etags.copy()
 
-    if messages:
-        body = "\n".join(messages)
-        send_email("📝 Изменения в папке Яндекс.Диска", body)
+    for f in changed_files:
+        if f["path"] in notified_etags and notified_etags[f["path"]] == f["etag"]:
+            continue  # уже уведомляли
 
-    save_state("previous_state.json", current)
+        body = f"📄 Изменён файл: {f['name']}\nПуть: {f['path']}\nДата: {f['modified']}"
+        send_email("⚠️ Обновление файла в Яндекс.Диске", body)
+        newly_notified[f["path"]] = f["etag"]
+
+    save_state("previous_state.json", current_state)
+    save_state("notified_etags.json", newly_notified)
+
+    git_commit_and_push(["previous_state.json", "notified_etags.json"])
 
 except Exception as e:
     print("Ошибка:", e)
