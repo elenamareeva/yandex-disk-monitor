@@ -55,8 +55,8 @@ def build_index(data):
 
 def describe_change(change_type, item):
     emoji = {"added": "➕", "removed": "➖", "changed": "✏️"}
-    label = "папка" if item["type"] == "dir" else "файл"
-    return f"{emoji[change_type]} {label.capitalize()}: {item['path']}\nСделал: невозможно определить (ограничения API)"
+    label = "файл" if item["type"] != "dir" else "папка"
+    return f"{emoji[change_type]} Добавлен {label}: {item['path']}" if change_type == "added" else            f"{emoji[change_type]} Изменён {label}: {item['path']}" if change_type == "changed" else            f"{emoji[change_type]} Удалён {label}: {item['path']}"
 
 def detect_differences(prev_list, curr_list):
     prev = build_index(prev_list)
@@ -90,7 +90,7 @@ try:
         messages.append(describe_change("changed", item))
 
     if messages:
-        body = "\n\n".join(messages)
+        body = "\n".join(messages)
         send_email("📝 Изменения в Яндекс.Диске", body)
 
     save_state("previous_state.json", current)
