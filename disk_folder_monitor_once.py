@@ -94,11 +94,16 @@ def detect_differences(prev_list, curr_list):
 def git_commit_and_push(files):
     subprocess.run(["git", "config", "--global", "user.email", "bot@example.com"])
     subprocess.run(["git", "config", "--global", "user.name", "GitHub Bot"])
-    subprocess.run(["git", "fetch"])  # чтобы избежать rejected
-    subprocess.run(["git", "checkout", "-B", "data"])  # переключиться на ветку data
+    subprocess.run(["git", "fetch"])
+    subprocess.run(["git", "checkout", "-B", "data"])  # создаёт или переключается на data
+
     subprocess.run(["git", "add"] + files)
-    subprocess.run(["git", "commit", "-m", "Update notification state"], check=False)
-    subprocess.run(["git", "push", "--force", "origin", "data"], check=False)
+    result = subprocess.run(["git", "diff", "--cached", "--quiet"])
+    if result.returncode != 0:
+        subprocess.run(["git", "commit", "-m", "Update notification state"])
+        subprocess.run(["git", "push", "--force", "origin", "data"])  # <- явно указана ветка!
+    else:
+        print("Нет изменений — пуш не требуется")
 
 try:
     current = list_all_items(FOLDER_PATH)
