@@ -53,7 +53,7 @@ def load_state(filename):
     if os.path.exists(filename):
         with open(filename) as f:
             return json.load(f)
-    return []
+    return [] if filename == "previous_state.json" else {}
 
 def save_state(filename, state):
     with open(filename, "w") as f:
@@ -101,23 +101,34 @@ def git_commit_and_push(files):
 try:
     current = list_all_items(FOLDER_PATH)
     previous = load_state("previous_state.json")
+    notified_etags = load_state("notified_etags.json")
 
     added, removed, changed = detect_differences(previous, current)
 
     messages = []
+    new_notified_etags = notified_etags.copy()
+
     for item in added:
         messages.append(describe_change("added", item))
+        new_notified_etags[item["path"]] = item["etag"]
+
     for item in removed:
         messages.append(describe_change("removed", item))
+        if item["path"] in new_notified_etags:
+            del new_notified_etags[item["path"]]
+
     for item in changed:
-        messages.append(describe_change("changed", item))
+        if item["path"] not in notified_etags or item["etag"] != notified_etags[item["path"]]:
+            messages.append(describe_change("changed", item))
+            new_notified_etags[item["path"]] = item["etag"]
 
     if messages:
         body = "\n".join(messages)
         send_email("📝 Изменения в Яндекс.Диске", body)
 
     save_state("previous_state.json", current)
-    git_commit_and_push(["previous_state.json"])
+    save_state("notified_etags.json", new_notified_etags)
+    git_commit_and_push(["previous_state.json", "notified_etags.json"])
 
 except Exception as e:
     print("Ошибка:", e)
