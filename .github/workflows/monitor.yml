@@ -32,10 +32,12 @@ jobs:
 
       - name: Commit state
         run: |
+          git fetch origin
+          git checkout -B data origin/data || git checkout -b data
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add previous_state.json notified_etags.json
-          git commit -m "Update state [bot]" || echo "No changes"
-          git push
+          git diff --cached --quiet || git commit -m "Update state [bot]"
+          git push --force origin data
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
