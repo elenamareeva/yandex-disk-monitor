@@ -2,8 +2,8 @@ name: Run Yandex Disk Monitor
 
 on:
   schedule:
-    - cron: '*/5 * * * *'  # Каждые 15 минут
-  workflow_dispatch:     # Возможность ручного запуска
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
 
 jobs:
   run-monitor:
@@ -19,18 +19,23 @@ jobs:
 
       - name: Install dependencies
         run: pip install requests
-      - name: Cache state files
-        uses: actions/cache@v3
-        with:
-          path: |
-            previous_state.json
-            notified_etags.json
-          key: ${{ runner.os }}-yadisk-state
+
       - name: Run disk monitor
-        run: python disk_folder_monitor_once.py
+        run: |
+          python disk_folder_monitor_once.py
         env:
           YANDEX_TOKEN: ${{ secrets.YANDEX_TOKEN }}
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
           FOLDER_PATH: ${{ secrets.FOLDER_PATH }}
+
+      - name: Commit state
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add previous_state.json notified_etags.json
+          git commit -m "Update state [bot]" || echo "No changes"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
