@@ -19,7 +19,13 @@ jobs:
 
       - name: Install dependencies
         run: pip install requests
-
+      - name: Cache state files
+        uses: actions/cache@v3
+        with:
+          path: |
+            previous_state.json
+            notified_etags.json
+          key: ${{ runner.os }}-yadisk-state
       - name: Run disk monitor
         run: python disk_folder_monitor_once.py
         env:
