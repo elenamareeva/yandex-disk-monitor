@@ -47,7 +47,7 @@ FOLDER_PATH=disk:/Документы/Отчёты
 Измени `EMAIL_TO` (через запятую):
 
 ```env
-EMAIL_TO=all@protelematics.ru
+EMAIL_TO=*
 ```
 
 ## Как работает сравнение
