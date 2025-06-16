@@ -51,9 +51,9 @@ def send_email(subject, body):
 
 def load_state(filename):
     if os.path.exists(filename):
-        with open(filename) as f:
+        with open(filename, encoding="utf-8") as f:
             return json.load(f)
-    return [] if filename == "previous_state.json" else {}
+    return {} if filename.endswith("etags.json") else []
 
 def save_state(filename, state):
     with open(filename, "w") as f:
@@ -125,9 +125,10 @@ try:
             del new_notified_mods[item["path"]]
 
     for item in changed:
-        if item["path"] not in notified_mods or item["etag"] != notified_mods[item["path"]]:
+        prev_mod = notified_etags.get(item["path"])
+        if prev_mod != item["modified"]:
             messages.append(describe_change("changed", item))
-            new_notified_mods[item["path"]] = item["etag"]
+            new_notified_etags[item["path"]] = item["modified"]
 
     if messages:
         body = "\n".join(messages)
