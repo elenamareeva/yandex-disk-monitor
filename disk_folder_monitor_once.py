@@ -111,7 +111,7 @@ def get_item_id(item):
 try:
     current = list_all_items(FOLDER_PATH)
     previous = load_state("previous_state.json")
-    notified_etags = load_state("notified_mods.json")
+    notified_etags = load_state("notified_etags.json")
 
     added, removed, changed = detect_differences(previous, current)
 
@@ -124,7 +124,7 @@ try:
 
     for item in removed:
         messages.append(describe_change("removed", item))
-        if item["path"] in new_notified_mods:
+        if item["path"] in new_notified_etags:
             del new_notified_etags[item["path"]]
 
     for item in changed:
