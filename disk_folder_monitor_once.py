@@ -111,21 +111,21 @@ def get_item_id(item):
 try:
     current = list_all_items(FOLDER_PATH)
     previous = load_state("previous_state.json")
-    notified_mods = load_state("notified_mods.json")
+    notified_etags = load_state("notified_mods.json")
 
     added, removed, changed = detect_differences(previous, current)
 
     messages = []
-    new_notified_mods = notified_mods.copy()
+    new_notified_etags = notified_etags.copy()
 
     for item in added:
         messages.append(describe_change("added", item))
-        new_notified_mods[item["path"]] = item["modified"]
+        new_notified_etags[item["path"]] = item["modified"]
 
     for item in removed:
         messages.append(describe_change("removed", item))
         if item["path"] in new_notified_mods:
-            del new_notified_mods[item["path"]]
+            del new_notified_etags[item["path"]]
 
     for item in changed:
         current_id = get_item_id(item)
@@ -138,7 +138,7 @@ try:
         send_email("📝 Изменения в Яндекс.Диске", body)
 
     save_state("previous_state.json", current)
-    save_state("notified_etags.json", new_notified_mods)
+    save_state("notified_etags.json", new_notified_etags)
     git_commit_and_push(["previous_state.json", "notified_etags.json"])
 
 except Exception as e:
