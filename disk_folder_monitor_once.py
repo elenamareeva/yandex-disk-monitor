@@ -134,8 +134,8 @@ try:
         send_email("📝 Изменения в Яндекс.Диске", body)
 
     save_state("previous_state.json", current)
-    save_state("notified_mods.json", new_notified_mods)
-    git_commit_and_push(["previous_state.json", "notified_mods.json"])
+    save_state("notified_etags.json", new_notified_mods)
+    git_commit_and_push(["previous_state.json", "notified_etags.json"])
 
 except Exception as e:
     print("Ошибка:", e)
