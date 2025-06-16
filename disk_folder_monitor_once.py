@@ -108,28 +108,30 @@ try:
 
     messages = []
     new_notified_etags = notified_etags.copy()
+    notified_mods = load_state("notified_mods.json")
+    new_notified_mods = notified_mods.copy()
 
     for item in added:
         messages.append(describe_change("added", item))
-        new_notified_etags[item["path"]] = item["etag"]
+        new_notified_mods[item["path"]] = item["modified"]
 
     for item in removed:
         messages.append(describe_change("removed", item))
-        if item["path"] in new_notified_etags:
-            del new_notified_etags[item["path"]]
+        if item["path"] in new_notified_mods:
+            del new_notified_mods[item["path"]]
 
     for item in changed:
-        if item["path"] not in notified_etags or item["etag"] != notified_etags[item["path"]]:
+        if item["path"] not in notified_mods or item["modified"] != notified_mods[item["path"]]:
             messages.append(describe_change("changed", item))
-            new_notified_etags[item["path"]] = item["etag"]
+            new_notified_mods[item["path"]] = item["modified"]
 
     if messages:
         body = "\n".join(messages)
         send_email("📝 Изменения в Яндекс.Диске", body)
 
     save_state("previous_state.json", current)
-    save_state("notified_etags.json", new_notified_etags)
-    git_commit_and_push(["previous_state.json", "notified_etags.json"])
+    save_state("notified_mods.json", new_notified_mods)
+    git_commit_and_push(["previous_state.json", "notified_mods.json"])
 
 except Exception as e:
     print("Ошибка:", e)
