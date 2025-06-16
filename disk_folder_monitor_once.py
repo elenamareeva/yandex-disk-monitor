@@ -53,7 +53,7 @@ def load_state(filename):
     if os.path.exists(filename):
         with open(filename, encoding="utf-8") as f:
             return json.load(f)
-    return {} if filename.endswith(".json") else []
+    return {} if "mod" in filename else []
 
 def save_state(filename, state):
     with open(filename, "w", encoding="utf-8") as f:
