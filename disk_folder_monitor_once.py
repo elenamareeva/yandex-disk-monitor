@@ -52,7 +52,12 @@ def send_email(subject, body):
 def load_state(filename):
     if os.path.exists(filename):
         with open(filename, encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+            if "mod" in filename and not isinstance(data, dict):
+                return {}  # безопасное значение по умолчанию
+            if "mod" not in filename and not isinstance(data, list):
+                return []
+            return data
     return {} if "mod" in filename else []
 
 def save_state(filename, state):
