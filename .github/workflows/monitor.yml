@@ -30,19 +30,28 @@ jobs:
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
           FOLDER_PATH: ${{ secrets.FOLDER_PATH }}
 
-      - name: Commit state
+      - name: Commit state if files exist
         run: |
           git fetch origin
           git checkout -B data origin/data || git checkout -b data
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          # Добавляем только те файлы, которые существуют
-          test -f previous_state.json && git add previous_state.json
-          test -f notified_etags.json && git add notified_etags.json
-          test -f notified_mods.json && git add notified_mods.json
+          FILES=""
+          for file in previous_state.json notified_mods.json notified_etags.json; do
+            if [ -f "$file" ]; then
+              git add "$file"
+              FILES="$FILES $file"
+            else
+              echo "Файл $file отсутствует"
+            fi
+          done
 
-          git diff --cached --quiet || git commit -m "Update state [bot]"
-          git push --force origin data
+          if [ -n "$FILES" ]; then
+            git diff --cached --quiet || git commit -m "Update state [bot]"
+            git push --force origin data
+          else
+            echo "Нет файлов для коммита"
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
