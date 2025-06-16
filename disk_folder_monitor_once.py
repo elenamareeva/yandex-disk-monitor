@@ -85,7 +85,7 @@ def detect_differences(prev_list, curr_list):
     removed = [prev[p] for p in prev if p not in curr]
     changed = [
         curr[p] for p in curr if p in prev and (
-            curr[p]["etag"] != prev[p]["etag"] or curr[p]["modified"] != prev[p]["modified"]
+             curr[p]["modified"] != prev[p]["modified"]
         )
     ]
 
@@ -125,7 +125,7 @@ try:
             del new_notified_etags[item["path"]]
 
     for item in changed:
-        if item["path"] not in notified_etags or item["etag"] != notified_etags[item["path"]]:
+        if item["path"] not in notified_etags or item["modified"] != notified_etags[item["path"]]:
             messages.append(describe_change("changed", item))
             new_notified_etags[item["path"]] = item["etag"]
 
