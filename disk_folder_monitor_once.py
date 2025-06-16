@@ -125,7 +125,7 @@ try:
             del new_notified_mods[item["path"]]
 
     for item in changed:
-        if item["path"] not in notified_mods or item["modified"] != notified_mods[item["path"]]:
+        if item["path"] not in notified_mods or item["etag"] != notified_mods[item["path"]]:
             messages.append(describe_change("changed", item))
             new_notified_mods[item["path"]] = item["etag"]
 
