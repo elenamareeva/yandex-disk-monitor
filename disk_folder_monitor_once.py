@@ -53,11 +53,11 @@ def load_state(filename):
     if os.path.exists(filename):
         with open(filename, encoding="utf-8") as f:
             return json.load(f)
-    return {} if filename.endswith("etags.json") else []
+    return {} if filename.endswith(".json") else []
 
 def save_state(filename, state):
-    with open(filename, "w") as f:
-        json.dump(state, f, indent=2)
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump(state, f, indent=2, ensure_ascii=False)
 
 def build_index(data):
     return {item["path"]: item for item in data}
@@ -85,23 +85,22 @@ def detect_differences(prev_list, curr_list):
     removed = [prev[p] for p in prev if p not in curr]
     changed = [
         curr[p] for p in curr if p in prev and (
-             curr[p]["modified"] != prev[p]["modified"]
+            curr[p]["modified"] != prev[p]["modified"]
         )
     ]
-
     return added, removed, changed
 
 def git_commit_and_push(files):
     subprocess.run(["git", "config", "--global", "user.email", "bot@example.com"])
     subprocess.run(["git", "config", "--global", "user.name", "GitHub Bot"])
     subprocess.run(["git", "fetch"])
-    subprocess.run(["git", "checkout", "-B", "data"])  # создаёт или переключается на data
+    subprocess.run(["git", "checkout", "-B", "data"])
 
     subprocess.run(["git", "add"] + files)
     result = subprocess.run(["git", "diff", "--cached", "--quiet"])
     if result.returncode != 0:
         subprocess.run(["git", "commit", "-m", "Update notification state"])
-        subprocess.run(["git", "push", "--force", "origin", "data"])  # <- явно указана ветка!
+        subprocess.run(["git", "push", "--force", "origin", "data"])
     else:
         print("Нет изменений — пуш не требуется")
 
@@ -111,35 +110,35 @@ def get_item_id(item):
 try:
     current = list_all_items(FOLDER_PATH)
     previous = load_state("previous_state.json")
-    notified_etags = load_state("notified_etags.json")
+    notified_mods = load_state("notified_mods.json")
 
     added, removed, changed = detect_differences(previous, current)
 
     messages = []
-    new_notified_etags = notified_etags.copy()
+    new_notified_mods = notified_mods.copy()
 
     for item in added:
         messages.append(describe_change("added", item))
-        new_notified_etags[item["path"]] = item["modified"]
+        new_notified_mods[item["path"]] = get_item_id(item)
 
     for item in removed:
         messages.append(describe_change("removed", item))
-        if item["path"] in new_notified_etags:
-            del new_notified_etags[item["path"]]
+        if item["path"] in new_notified_mods:
+            del new_notified_mods[item["path"]]
 
     for item in changed:
         current_id = get_item_id(item)
-        if item["path"] not in notified_etags or current_id != notified_etags[item["path"]]:
+        if item["path"] not in notified_mods or current_id != notified_mods[item["path"]]:
             messages.append(describe_change("changed", item))
-            new_notified_etags[item["path"]] = current_id
+            new_notified_mods[item["path"]] = current_id
 
     if messages:
         body = "\n".join(messages)
         send_email("📝 Изменения в Яндекс.Диске", body)
 
     save_state("previous_state.json", current)
-    save_state("notified_etags.json", new_notified_etags)
-    git_commit_and_push(["previous_state.json", "notified_etags.json"])
+    save_state("notified_mods.json", new_notified_mods)
+    git_commit_and_push(["previous_state.json", "notified_mods.json"])
 
 except Exception as e:
     print("Ошибка:", e)
