@@ -36,7 +36,12 @@ jobs:
           git checkout -B data origin/data || git checkout -b data
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add previous_state.json notified_etags.json
+
+          # Добавляем только те файлы, которые существуют
+          test -f previous_state.json && git add previous_state.json
+          test -f notified_etags.json && git add notified_etags.json
+          test -f notified_mods.json && git add notified_mods.json
+
           git diff --cached --quiet || git commit -m "Update state [bot]"
           git push --force origin data
         env:
