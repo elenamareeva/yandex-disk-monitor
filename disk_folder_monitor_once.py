@@ -127,7 +127,7 @@ try:
     for item in changed:
         if item["path"] not in notified_mods or item["modified"] != notified_mods[item["path"]]:
             messages.append(describe_change("changed", item))
-            new_notified_mods[item["path"]] = item["modified"]
+            new_notified_mods[item["path"]] = item["etag"]
 
     if messages:
         body = "\n".join(messages)
