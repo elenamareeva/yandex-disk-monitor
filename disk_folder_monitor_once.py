@@ -99,6 +99,8 @@ def git_commit_and_push(files):
     subprocess.run(["git", "commit", "-m", "Update notification state"], check=False)
     subprocess.run(["git", "push", "origin", "data"], check=False)
 
+def get_item_id(item):
+    return item["etag"] if item["etag"] else item["modified"]
 try:
     current = list_all_items(FOLDER_PATH)
     previous = load_state("previous_state.json")
@@ -121,9 +123,10 @@ try:
             del new_notified_mods[item["path"]]
 
     for item in changed:
-        if item["path"] not in notified_mods or item["modified"] != notified_mods[item["path"]]:
+   current_id = get_item_id(item)
+        if item["path"] not in notified_etags or current_id != notified_etags[item["path"]]:
             messages.append(describe_change("changed", item))
-            new_notified_mods[item["path"]] = item["modified"]
+            new_notified_etags[item["path"]] = current_id
 
     if messages:
         body = "\n".join(messages)
