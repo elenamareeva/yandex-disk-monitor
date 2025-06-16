@@ -116,7 +116,8 @@ try:
     current = list_all_items(FOLDER_PATH)
     previous = load_state("previous_state.json")
     notified_mods = load_state("notified_mods.json")
-
+    if not isinstance(notified_mods, dict):
+    notified_mods = {}
     added, removed, changed = detect_differences(previous, current)
 
     messages = []
