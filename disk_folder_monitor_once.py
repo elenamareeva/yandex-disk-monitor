@@ -101,6 +101,7 @@ def git_commit_and_push(files):
 
 def get_item_id(item):
     return item["etag"] if item["etag"] else item["modified"]
+    
 try:
     current = list_all_items(FOLDER_PATH)
     previous = load_state("previous_state.json")
@@ -123,7 +124,7 @@ try:
             del new_notified_mods[item["path"]]
 
     for item in changed:
-   current_id = get_item_id(item)
+    current_id = get_item_id(item)
         if item["path"] not in notified_etags or current_id != notified_etags[item["path"]]:
             messages.append(describe_change("changed", item))
             new_notified_etags[item["path"]] = current_id
