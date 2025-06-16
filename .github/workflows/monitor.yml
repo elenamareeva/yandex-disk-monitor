@@ -33,8 +33,7 @@ jobs:
       - name: Commit state if files exist
         run: |
           git fetch origin
-          git checkout -B data origin/data || git checkout -b data
-          git pull --rebase origin data || echo "Нет изменений или rebase не нужен"
+          
 
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
@@ -44,7 +43,7 @@ jobs:
           test -f notified_mods.json && git add notified_mods.json
 
           git diff --cached --quiet || git commit -m "Update state [bot]"
-          git push origin data
+          git push origin main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
